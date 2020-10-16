@@ -124,8 +124,8 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     cmd_ismaster = 'db.isMaster().ismaster'
     cmd_ismaster = mongorc_file + cmd_ismaster if mongorc_file
     db = 'admin'
-    res = Puppet::Util::MongodbOutput.sanitize(mongo_cmd(db, conn_string, cmd_ismaster).to_s.chomp)
-    res.eql?('true')
+    res = mongo_cmd(db, conn_string, cmd_ismaster).to_s
+    Puppet::Util::MongodbOutput.sanitize(res).strip.eql?('true')
   end
 
   def db_ismaster
