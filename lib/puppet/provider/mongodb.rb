@@ -107,7 +107,20 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     "#{ip_real}:#{port_real}"
   end
 
-  def self.db_ismaster
+  def self.localhost_exception
+    if db_ismaster and auth_enabled
+      res = mongo_cmd(db, conn_string, mongorc_file).to_s.strip
+      /authentication failed/i.match(res)
+    else
+      false
+    end
+  end
+
+  def localhost_exception
+    self.class.localhost_exception
+  end
+
+  def self.db_ismaster(strip = true)
     cmd_ismaster = 'db.isMaster().ismaster'
     cmd_ismaster = mongorc_file + cmd_ismaster if mongorc_file
     db = 'admin'

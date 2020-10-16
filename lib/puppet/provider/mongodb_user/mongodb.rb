@@ -8,7 +8,15 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, parent: Puppet::Provider::Mon
     require 'json'
 
     if db_ismaster
-      users = JSON.parse mongo_eval('printjson(db.system.users.find().toArray())')
+      # we need to ignore failures to prefetch users if we're using the
+      # localhost exception, as it doesn't allow access to query users
+      begin
+        users = JSON.parse mongo_eval('printjson(db.system.users.find().toArray())')
+      rescue Puppet::ExecutionFailure
+        if localhost_exception
+          return []
+        end
+      end
 
       users.map do |user|
         new(name: user['_id'],

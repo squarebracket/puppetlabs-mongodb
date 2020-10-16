@@ -108,8 +108,8 @@ class mongodb::server (
     # Make sure it runs before other DB creation
     Mongodb::Db['admin'] -> Mongodb::Db <| title != 'admin' |>
     # We need the user before attempting to prefetch the DBs
-    Mongodb_user['User admin on db admin'] -> Mongodb_database<| |>
-    Mongodb_user['User admin on db admin'] -> Mongodb_user<| title != 'User admin on db admin' |>
+    Mongodb_user["User ${admin_username} on db admin"] -> Mongodb_database<| |>
+    Mongodb_user["User ${admin_username} on db admin"] -> Mongodb_user<| title != "User ${admin_username} on db admin" |>
   }
 
   # Set-up replicasets
