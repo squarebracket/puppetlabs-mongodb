@@ -7,7 +7,7 @@ Puppet::Type.type(:mongodb_database).provide(:mongodb, parent: Puppet::Provider:
   def self.instances
     require 'json'
 
-    if db_ismaster
+    if db_isarbiter
       return []
     end
     pre_cmd = 'try { rs.secondaryOk() } catch (err) { rs.slaveOk() }'
@@ -26,10 +26,6 @@ Puppet::Type.type(:mongodb_database).provide(:mongodb, parent: Puppet::Provider:
       provider = dbs.find { |db| db.name == name }
       resources[name].provider = provider if provider
     end
-  end
-
-  def db_isarbiter()
-    mongo_command('db.isMaster()')['arbiterOnly']
   end
 
   def create

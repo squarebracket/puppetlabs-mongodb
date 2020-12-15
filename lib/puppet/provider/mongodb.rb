@@ -132,6 +132,18 @@ class Puppet::Provider::Mongodb < Puppet::Provider
     self.class.db_ismaster
   end
 
+  def self.db_isarbiter
+    cmd_ismaster = 'db.isMaster().arbiterOnly'
+    cmd_ismaster = mongorc_file + cmd_ismaster if mongorc_file
+    db = 'admin'
+    res = mongo_cmd(db, conn_string, cmd_ismaster).to_s
+    Puppet::Util::MongodbOutput.sanitize(res).strip.eql?('true')
+  end
+
+  def db_isarbiter
+    self.class.db_isarbiter
+  end
+
   def self.auth_enabled(config = nil)
     config ||= mongo_conf
     config['auth'] && config['auth'] != 'disabled'
