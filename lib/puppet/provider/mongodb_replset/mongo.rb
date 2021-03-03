@@ -269,9 +269,12 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
 
       Puppet.debug "Starting replset config is #{replset_conf.to_json}"
       # Set replset members with the first host as the master
-      output = rs_initiate(replset_conf, alive_hosts[0]['host'])
+      output = rs_initiate(replset_conf, initialize_host)
       if output['ok'].zero?
-        raise Puppet::Error, "rs.initiate() failed for replicaset #{name}: #{output['errmsg']}"
+        # handle race condition
+        unless output['errmsg'].include?('already initialized')
+          raise Puppet::Error, "rs.initiate() failed for replicaset #{name}: #{output['errmsg']}"
+        end
       end
 
       # Check that the replicaset has finished initialization
@@ -280,17 +283,17 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
 
       retry_limit.times do |n|
         begin
-          if db_ismaster(alive_hosts[0]['host'])['ismaster']
+          if master_host(alive_hosts)
             Puppet.debug 'Replica set initialization has successfully ended'
             return true
           else
-            Puppet.debug "Wainting for replica initialization. Retry: #{n}"
+            Puppet.debug "Waiting for replica initialization. Retry: #{n}"
             sleep retry_sleep
             next
           end
         end
       end
-      raise Puppet::Error, "rs.initiate() failed for replicaset #{name}: host #{alive_hosts[0]['host']} didn't become master"
+      raise Puppet::Error, "rs.initiate() failed for replicaset #{name}: no host became master"
 
     else
       Puppet.debug "Checking for replset #{name} changes"
