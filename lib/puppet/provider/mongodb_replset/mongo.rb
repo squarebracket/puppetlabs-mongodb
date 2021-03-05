@@ -130,7 +130,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
   def self.replset_properties
     conn_string = conn_string
     begin
-      output = mongo_command('rs.conf()', conn_string)
+      output = mongo_command('rs.conf()', conn_string, 10)
     rescue Puppet::ExecutionFailure
       output = {}
     end
@@ -268,13 +268,21 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
       }.to_json
 
       Puppet.debug "Starting replset config is #{replset_conf.to_json}"
+      init_success = false
       # Set replset members with the first host as the master
-      output = rs_initiate(replset_conf, initialize_host)
-      if output['ok'].zero?
-        # handle race condition
-        unless output['errmsg'].include?('already initialized')
-          raise Puppet::Error, "rs.initiate() failed for replicaset #{name}: #{output['errmsg']}"
+      3.times do |n|
+        output = rs_initiate(replset_conf, initialize_host)
+        if output['ok'].one?
+          init_success = true
+          break
+        elsif output['errmsg'].include?('already initialized')
+          # handle race condition
+          init_success = true
+          break
         end
+      end
+      if not init_success
+        raise Puppet::Error, "rs.initiate() failed for replicaset #{name}: #{output['errmsg']}"
       end
 
       # Check that the replicaset has finished initialization
