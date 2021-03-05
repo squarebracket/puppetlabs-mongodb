@@ -283,7 +283,8 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo, parent: Puppet::Provider::Mo
 
       retry_limit.times do |n|
         begin
-          if master_host(alive_hosts)
+          # need to account for localhost exception
+          if master_host(alive_hosts) or db_ismaster('127.0.0.1')['ismaster']
             Puppet.debug 'Replica set initialization has successfully ended'
             return true
           else
